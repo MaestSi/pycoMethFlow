@@ -1,9 +1,9 @@
 #!/usr/bin/env nextflow
 /*
 ========================================================================================
-                         maestsi/pycoMethFlow
+                         MaestSi/pycoMethFlow
 ========================================================================================
- maestsi/pycoMethFlow analysis Pipeline.
+ MaestSi/pycoMethFlow analysis pipeline.
  #### Homepage / Documentation
  https://github.com/MaestSi/pycoMethFlow
 ----------------------------------------------------------------------------------------
