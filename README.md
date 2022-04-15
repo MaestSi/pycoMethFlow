@@ -22,12 +22,19 @@ The pycoMethFlow pipeline requires you to open pycomethflow.conf configuration f
 
 ```
 nextflow -c pycomethflow.conf run pycomethflow.nf \
--profile docker|singularity \
---samples = "/path/to/samples.txt" \
---results_dir = "/path/to/results_dir" \
---reference = "/path/to/file.fasta" \
---gtf = "/path/to/file.gff"
+--samples = "samples.txt" \
+--results_dir = "results_dir" \
+--reference = "file.fasta" \
+--gtf = "file.gff" \
+-profile docker
 
+    Mandatory argument:
+    -profile                        Configuration profile to use. Available: docker, singularity
+    Other mandatory arguments which may be specified in the pycomethflow.conf file
+      --samples                     Path to tab separated sample sheet containing sample_name /path/to/file.fastq /path/to/fast5_dir /path/to/sequencing_summary.txt
+      --results_dir                 Directory where results are stored
+      --reference                   Reference file in fasta format
+      --gtf                         Annotation file in gtf format
 ```
 
 ## Citation
