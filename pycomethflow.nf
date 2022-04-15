@@ -48,7 +48,8 @@ process alignment {
     if(params.alignment)
     """
        	mkdir -p ${params.results_dir}/${sample}/alignment/
-        minimap2 -ax map-ont -t ${task.cpus} ${params.reference} ${fastq} | samtools view -hSb | samtools sort -@ ${task.cpus} -o ${params.results_dir}/${sample}/alignment/minimap.bam
+        
+	minimap2 -ax map-ont -t ${task.cpus} ${params.reference} ${fastq} | samtools view -hSb | samtools sort -@ ${task.cpus} -o ${params.results_dir}/${sample}/alignment/minimap.bam
         samtools index -@ ${task.cpus} ${params.results_dir}/${sample}/alignment/minimap.bam
            
         ln -s ${params.results_dir}/${sample}/alignment/minimap.bam ./minimap.bam
@@ -73,10 +74,12 @@ process nanopolish {
     if(params.nanopolish)
     """
        	mkdir -p ${params.results_dir}/${sample}/nanopolish/
-        fastq=\$(grep ${sample} ${params.samples} | cut -f2)
+        
+	fastq=\$(grep ${sample} ${params.samples} | cut -f2)
         fast5=\$(grep ${sample} ${params.samples} | cut -f3)
         sequencing_summary=\$(grep ${sample} ${params.samples} | cut -f4)
-        nanopolish index -d \${fast5} \${fastq} -s \${sequencing_summary}
+        
+	nanopolish index -d \${fast5} \${fastq} -s \${sequencing_summary}
         nanopolish call-methylation --reads \${fastq} --bam ${params.results_dir}/${sample}/alignment/minimap.bam --genome ${params.reference} --methylation cpg --threads ${task.cpus} > ${params.results_dir}/${sample}/nanopolish/nanopolish_cpg_methylation.tsv
 
         ln -s ${params.results_dir}/${sample}/nanopolish/nanopolish_cpg_methylation.tsv ./nanopolish_cpg_methylation.tsv
@@ -98,8 +101,11 @@ process pycomethCGIFinder {
     if(params.pycomethCGIFinder)
     """
        	mkdir -p ${params.results_dir}/pycometh/
-        pycoMeth CGI_Finder -f ${params.reference} -b ${params.results_dir}/pycometh/CGI_Finder.bed -t ${params.results_dir}/pycometh/CGI_Finder.tsv -m ${params.CGI_Finder_m} -w ${params.CGI_Finder_w} -c ${params.CGI_Finder_c} -r ${params.CGI_Finder_r}
+        
+	pycoMeth CGI_Finder -f ${params.reference} -b ${params.results_dir}/pycometh/CGI_Finder.bed -t ${params.results_dir}/pycometh/CGI_Finder.tsv -m ${params.CGI_Finder_m} -w ${params.CGI_Finder_w} -c ${params.CGI_Finder_c} -r ${params.CGI_Finder_r}
 
+        if [[ ! -f "${params.results_dir}/pycometh/CGI_Finder.bed" ]]; then touch "${params.results_dir}/pycometh/CGI_Finder.bed"; fi
+	
         ln -s ${params.results_dir}/pycometh/CGI_Finder.bed ./CGI_Finder.bed
         ln -s ${params.results_dir}/pycometh/CGI_Finder.tsv ./CGI_Finder.tsv
         
@@ -124,6 +130,8 @@ process pycomethCpGAggregate {
 
         pycoMeth CpG_Aggregate -i 'nanopolish_cpg_methylation' -f ${params.reference} -b ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.bed -t ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv -s ${sample} -d ${params.CpG_Aggregate_d} -l ${params.CpG_Aggregate_l}
         
+	if [[ ! -f "${params.results_dir}/pycometh/CpG_Aggregate.bed" ]]; then touch "${params.results_dir}/pycometh/CpG_Aggregate.bed"; fi
+	
         ln -s ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.bed ./CpG_Aggregate.bed
         ln -s ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv ./CpG_Aggregate.tsv
         
@@ -153,7 +161,9 @@ process pycomethIntervalAggregate {
         else
             pycoMeth Interval_Aggregate -i ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv -f ${params.reference} -a ${params.results_dir}/${sample}/pycometh/CGI_Aggregate.bed  -b ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed  -t ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv -n ${params.Interval_Aggregate_n}  -m ${params.Interval_Aggregate_m} -s ${sample} -l ${params.Interval_Aggregate_l} 
         fi
-
+        
+	if [[ ! -f "${params.results_dir}/pycometh/Interval_Aggregate.tsv" ]]; then touch "${params.results_dir}/pycometh/Interval_Aggregate.tsv"; fi
+	
         ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed ./Interval_Aggregate.bed;
         ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv ./Interval_Aggregate.tsv;
    
@@ -177,9 +187,12 @@ process pycomethMethComp {
     if(params.pycomethMethComp)
     """
         mkdir -p ${params.results_dir}/pycometh/
-        pycoMeth Meth_Comp -i Interval_Aggregate.tsv* -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp.bed -t ${params.results_dir}/pycometh/Meth_Comp.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
-        if [[ ! -f "${params.results_dir}/pycometh/Meth_Comp.bed" ]]; then touch "${params.results_dir}/pycometh/Meth_Comp.bed"; fi
-        ln -s ${params.results_dir}/pycometh/Meth_Comp.bed ./Meth_Comp.bed
+        
+	pycoMeth Meth_Comp -i Interval_Aggregate.tsv* -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp.bed -t ${params.results_dir}/pycometh/Meth_Comp.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
+        
+	if [[ ! -f "${params.results_dir}/pycometh/Meth_Comp.tsv" ]]; then touch "${params.results_dir}/pycometh/Meth_Comp.tsv"; fi
+        
+	ln -s ${params.results_dir}/pycometh/Meth_Comp.bed ./Meth_Comp.bed
         ln -s ${params.results_dir}/pycometh/Meth_Comp.tsv ./Meth_Comp.tsv
     """
     else
