@@ -1,0 +1,3 @@
+sample	fastq	fast5	sequencing_summary
+sample_name1	/path/to/file1.fastq	/path/to/fast5_dir	/path/to/sequencing_summary.txt
+sample_name2	/path/to/file2.fastq	/path/to/fast5_dir	/path/to/sequencing_summary.txt

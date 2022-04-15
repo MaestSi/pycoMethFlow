@@ -21,20 +21,14 @@ process alignment {
        	mkdir -p ${params.results_dir}/${sample}/alignment/
         minimap2 -ax map-ont -t ${task.cpus} ${params.reference} ${fastq} | samtools view -hSb | samtools sort -@ ${task.cpus} -o ${params.results_dir}/${sample}/alignment/minimap.bam
         samtools index -@ ${task.cpus} ${params.results_dir}/${sample}/alignment/minimap.bam
-        #samtools view ${params.results_dir}/${sample}/alignment/minimap.bam -bh -F 2308 | samtools sort -@ ${task.cpus} -o ${params.results_dir}/${sample}/alignment/minimap.filt.bam
-        #samtools index -@ ${task.cpus} ${params.results_dir}/${sample}/alignment/minimap.filt.bam
-        
+           
         ln -s ${params.results_dir}/${sample}/alignment/minimap.bam ./minimap.bam
         ln -s ${params.results_dir}/${sample}/alignment/minimap.bam.bai ./minimap.bam.bai
-        #ln -s ${params.results_dir}/${sample}/alignment/minimap.filt.bam ./minimap.filt.bam
-        #ln -s ${params.results_dir}/${sample}/alignment/minimap.filt.bam.bai ./minimap.filt.bam.bai
     """
     else
     """
         ln -s ${params.results_dir}/${sample}/alignment/minimap.bam ./minimap.bam
        	ln -s ${params.results_dir}/${sample}/alignment/minimap.bam.bai ./minimap.bam.bai
-        #ln -s ${params.results_dir}/${sample}/alignment/minimap.filt.bam ./minimap.filt.bam
-        #ln -s ${params.results_dir}/${sample}/alignment/minimap.filt.bam.bai ./minimap.filt.bam.bai
     """
 }
 
@@ -122,23 +116,18 @@ process pycomethIntervalAggregate {
     file('Interval_Aggregate.tsv') into pycomethIntervalAggregate_pycomethMethComp
 
     script:
-    if(params.pycomethIntervalAggregate & params.pycomethCGIFinder)
+    if(params.pycomethIntervalAggregate)
     """
-        mkdir -p ${params.results_dir}/${sample}/pycometh/
+        mkdir -p ${params.results_dir}/${sample}/pycometh/;
+        if [[ ${params.pycomethCGIFinder} ]]; then
+            pycoMeth Interval_Aggregate -i ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv -f ${params.reference} -b ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed  -t ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv -n ${params.Interval_Aggregate_n} -m ${params.Interval_Aggregate_m} -s ${sample} -l ${params.Interval_Aggregate_l};
+        else
+            pycoMeth Interval_Aggregate -i ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv -f ${params.reference} -a ${params.results_dir}/${sample}/pycometh/CGI_Aggregate.bed  -b ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed  -t ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv -n ${params.Interval_Aggregate_n}  -m ${params.Interval_Aggregate_m} -s ${sample} -l ${params.Interval_Aggregate_l} 
+        fi
 
-        pycoMeth Interval_Aggregate -i ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv -f ${params.reference} -b ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed  -t ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv -n ${params.Interval_Aggregate_n} -m ${params.Interval_Aggregate_m} -s ${sample} -l ${params.Interval_Aggregate_l} 
-        
-        ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed ./Interval_Aggregate.bed
-        ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv ./Interval_Aggregate.tsv
-    """
-    else if (params.pycomethIntervalAggregate & !params.pycomethCGIFinder)
-    """
-        mkdir -p ${params.results_dir}/${sample}/pycometh/
-
-        pycoMeth Interval_Aggregate -i ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv -f ${params.reference} -a ${params.results_dir}/${sample}/pycometh/CGI_Aggregate.bed  -b ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed  -t ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv -n ${params.Interval_Aggregate_n}  -m ${params.Interval_Aggregate_m} -s ${sample} -l ${params.Interval_Aggregate_l} 
-        
-        ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed ./Interval_Aggregate.bed
-        ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv ./Interval_Aggregate.tsv
+        ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed ./Interval_Aggregate.bed;
+        ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv ./Interval_Aggregate.tsv;
+   
     """
     else
     """
@@ -153,14 +142,16 @@ process pycomethMethComp {
     file('Interval_Aggregate.tsv*') from pycomethIntervalAggregate_pycomethMethComp.collect()
 
     output:
-    file ('Meth_Comp.bed') into pycomethMethComp_pycomethCompReport
+    file ('Meth_Comp.tsv') into pycomethMethComp_pycomethCompReport
 
     script:
     if(params.pycomethMethComp)
     """
         mkdir -p ${params.results_dir}/pycometh/
-        pycoMeth Meth_Comp -i Interval_Aggregate.tsv* -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp.bed -t ${params.results_dir}/pycometh/Meth_Comp.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}  
-        
+        pycoMeth Meth_Comp -i Interval_Aggregate.tsv* -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp.bed -t ${params.results_dir}/pycometh/Meth_Comp.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
+        if [[ ! -f "${params.results_dir}/pycometh/Meth_Comp.bed" ]]; then touch "${params.results_dir}/pycometh/Meth_Comp.bed"; fi
+        ln -s ${params.results_dir}/pycometh/Meth_Comp.bed ./Meth_Comp.bed
+        ln -s ${params.results_dir}/pycometh/Meth_Comp.tsv ./Meth_Comp.tsv
     """
     else
     """
@@ -171,7 +162,7 @@ process pycomethMethComp {
 }
 process pycomethCompReport {
     input:
-    file ('Meth_Comp.bed') from pycomethMethComp_pycomethCompReport
+    file ('Meth_Comp.tsv') from pycomethMethComp_pycomethCompReport
 
     output:
 
@@ -179,11 +170,19 @@ process pycomethCompReport {
     if(params.pycomethCompReport)
     """
         mkdir -p ${params.results_dir}/pycometh/
+        cat 'Meth_Comp.tsv' | grep -v "Insufficient" | tail -n+2 > 'Meth_Comp_diff.tsv';
 
-        pycoMeth Comp_Report -i 'Meth_Comp.bed' -g ${params.gtf} -f ${params.reference} -o ${params.results_dir}/pycometh/Comp_Report.html -n ${params.Comp_Report_n} -d ${params.Comp_Report_d} --pvalue_threshold ${params.Comp_Report_pvalue_threshold} --min_diff_llr ${params.Comp_Report_min_diff_llr}
+        if [[ -s 'Meth_Comp_diff.tsv' ]]; then
+            pycoMeth Comp_Report -i 'Meth_Comp.bed' -g ${params.gtf} -f ${params.reference} -o ${params.results_dir}/pycometh/Comp_Report.html -n ${params.Comp_Report_n} -d ${params.Comp_Report_d} --pvalue_threshold ${params.Comp_Report_pvalue_threshold} --min_diff_llr ${params.Comp_Report_min_diff_llr};
+            ln -s ${params.results_dir}/pycometh/Comp_Report.html ./Comp_Report.html;
+        else
+            touch ${params.results_dir}/pycometh/Comp_Report.html;
+            ln -s ${params.results_dir}/pycometh/Comp_Report.html ./Comp_Report.html;
+        fi
+
     """
     else
     """
-        ln -s ${params.results_dir}/pycometh/Comp_Report.html ./Comp_Report.html
+        echo "Skipped"
     """
 }
