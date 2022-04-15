@@ -52,3 +52,5 @@ PycoMeth: A toolbox for differential methylation testing from Nanopore methylati
 [nanopolish](https://github.com/jts/nanopolish)
 
 [pycoMeth](https://github.com/snajder-r/pycoMeth)
+
+[pycoMeth documentation](https://a-slide.github.io/pycoMeth/)
