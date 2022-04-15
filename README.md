@@ -1,5 +1,5 @@
 # pycoMethFlow
-**pycoMethFlow** is a pipeline built using [Nextflow](https://www.nextflow.io) for running minimap2 + nanopolish --call-methylation + pycoMeth pipeline on multiple samples and across multiple infrastructure in a streamlined, portable and reproducible manner.
+**pycoMethFlow** is a pipeline built using [Nextflow](https://www.nextflow.io) for running minimap2 + nanopolish call-methylation + pycoMeth pipeline on multiple samples and across multiple infrastructure in a streamlined, portable and reproducible manner.
 
 ## Getting started
 
