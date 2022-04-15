@@ -130,7 +130,7 @@ process pycomethCpGAggregate {
 
         pycoMeth CpG_Aggregate -i 'nanopolish_cpg_methylation' -f ${params.reference} -b ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.bed -t ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv -s ${sample} -d ${params.CpG_Aggregate_d} -l ${params.CpG_Aggregate_l}
         
-	if [[ ! -f "${params.results_dir}/pycometh/CpG_Aggregate.bed" ]]; then touch "${params.results_dir}/pycometh/CpG_Aggregate.bed"; fi
+	if [[ ! -f "${params.results_dir}/${sample}/pycometh/CpG_Aggregate.bed" ]]; then touch "${params.results_dir}/${sample}/pycometh/CpG_Aggregate.bed"; fi
 	
         ln -s ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.bed ./CpG_Aggregate.bed
         ln -s ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv ./CpG_Aggregate.tsv
@@ -162,7 +162,7 @@ process pycomethIntervalAggregate {
             pycoMeth Interval_Aggregate -i ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv -f ${params.reference} -a ${params.results_dir}/${sample}/pycometh/CGI_Aggregate.bed  -b ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed  -t ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv -n ${params.Interval_Aggregate_n}  -m ${params.Interval_Aggregate_m} -s ${sample} -l ${params.Interval_Aggregate_l} 
         fi
         
-	if [[ ! -f "${params.results_dir}/pycometh/Interval_Aggregate.tsv" ]]; then touch "${params.results_dir}/pycometh/Interval_Aggregate.tsv"; fi
+	if [[ ! -f "${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv" ]]; then touch "${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv"; fi
 	
         ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed ./Interval_Aggregate.bed;
         ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv ./Interval_Aggregate.tsv;
