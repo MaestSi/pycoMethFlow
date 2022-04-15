@@ -43,7 +43,7 @@ For further information, please refer to the following manuscripts:
 
 Li H. Minimap2: pairwise alignment for nucleotide sequences. Bioinformatics. 2018 Sep 15;34(18):3094-3100. doi: 10.1093/bioinformatics/bty191. PMID: 29750242; PMCID: PMC6137996.
 
-Loman, N., Quick, J. & Simpson, J. A complete bacterial genome assembled de novo using only nanopore sequencing data. Nat Methods 12, 733–735 (2015). https://doi.org/10.1038/nmeth.3444
+Simpson, J., Workman, R., Zuzarte, P. et al. Detecting DNA cytosine methylation using nanopore sequencing. Nat Methods 14, 407–410 (2017). https://doi.org/10.1038/nmeth.4184
 
 PycoMeth: A toolbox for differential methylation testing from Nanopore methylation calls. Rene Snajder, Oliver Stegle, Marc Jan Bonder. bioRxiv 2022.02.16.480699; doi: https://doi.org/10.1101/2022.02.16.480699
 
