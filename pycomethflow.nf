@@ -75,9 +75,9 @@ process nanopolish {
     """
        	mkdir -p ${params.results_dir}/${sample}/nanopolish/
         
-	fastq=\$(grep ${sample} ${params.samples} | cut -f2)
-        fast5=\$(grep ${sample} ${params.samples} | cut -f3)
-        sequencing_summary=\$(grep ${sample} ${params.samples} | cut -f4)
+	fastq=\$(grep \"^\"${sample}\"\t\" ${params.samples} | cut -f2)
+        fast5=\$(grep \"^\"${sample}\"\t\" ${params.samples} | cut -f3)
+        sequencing_summary=\$(grep \"^\"${sample}\"\t\" ${params.samples} | cut -f4)
         
 	nanopolish index -d \${fast5} \${fastq} -s \${sequencing_summary}
         nanopolish call-methylation --reads \${fastq} --bam ${params.results_dir}/${sample}/alignment/minimap.bam --genome ${params.reference} --methylation cpg --threads ${task.cpus} > ${params.results_dir}/${sample}/nanopolish/nanopolish_cpg_methylation.tsv
