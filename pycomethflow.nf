@@ -1,4 +1,33 @@
 #!/usr/bin/env nextflow
+/*
+========================================================================================
+                         maestsi/pycoMethFlow
+========================================================================================
+ maestsi/pycoMethFlow analysis Pipeline.
+ #### Homepage / Documentation
+ https://github.com/MaestSi/pycoMethFlow
+----------------------------------------------------------------------------------------
+*/
+def helpMessage() {
+        log.info"""
+    Usage:
+    nextflow -c pycomethflow.conf run pycomethflow.nf --samples = "samples.txt" --results_dir = "results_dir" --reference = "file.fasta" --gtf = "file.gff" 
+-profile docker
+    Mandatory argument:
+    -profile                        Configuration profile to use. Available: docker, singularity
+    Other mandatory arguments which may be specified in the pycomethflow.conf file
+      --samples                     Path to tab separated sample sheet containing sample_name /path/to/file.fastq /path/to/fast5_dir /path/to/sequencing_summary.txt
+      --results_dir                 Directory where results are stored
+      --reference                   Reference file in fasta format
+      --gtf                         Annotation file in gtf format
+    """.stripIndent()
+}
+
+// Show help message
+if (params.help) {
+    helpMessage()
+    exit 0
+}
 
 // Input of sample names, conditions, and FAST5s path.
 Channel
