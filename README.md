@@ -18,7 +18,7 @@ chmod 755 *
 
 ## Usage
 
-The pycoMethFlow pipeline requires you to open pycomethflow.conf configuration file and set desired options. Then, you can run the pipeline using either docker or singularity environments.
+The pycoMethFlow pipeline requires you to open pycomethflow.conf configuration file and set the desired options. Then, you can run the pipeline using either docker or singularity environments just specifying a value for the -profile variable.
 
 ```
 nextflow -c pycomethflow.conf run pycomethflow.nf \
