@@ -215,11 +215,11 @@ process pycomethCompReport {
         cat 'Meth_Comp.tsv' | grep -v "Insufficient" | tail -n+2 > 'Meth_Comp_diff.tsv';
 
         if [[ -s 'Meth_Comp_diff.tsv' ]]; then
-            pycoMeth Comp_Report -i 'Meth_Comp.tsv' -g ${params.gtf} -f ${params.reference} -o ${params.results_dir}/pycometh/Comp_Report.html -n ${params.Comp_Report_n} -d ${params.Comp_Report_d} --pvalue_threshold ${params.Comp_Report_pvalue_threshold} --min_diff_llr ${params.Comp_Report_min_diff_llr} --n_len_bin ${params.Comp_Report_n_len_bin} ${params.Comp_Report_export_static_plots} ${params.Comp_Report_report_non_significant};
-            ln -s ${params.results_dir}/pycometh/Comp_Report.html ./Comp_Report.html;
+            pycoMeth Comp_Report -i 'Meth_Comp.tsv' -g ${params.gtf} -f ${params.reference} -o ${params.results_dir}/pycometh -n ${params.Comp_Report_n} -d ${params.Comp_Report_d} --pvalue_threshold ${params.Comp_Report_pvalue_threshold} --min_diff_llr ${params.Comp_Report_min_diff_llr} --n_len_bin ${params.Comp_Report_n_len_bin} ${params.Comp_Report_export_static_plots} ${params.Comp_Report_report_non_significant};
+            ln -s ${params.results_dir}/pycometh/pycoMeth_summary_report.html ./pycoMeth_summary_report.html;
         else
-            touch ${params.results_dir}/pycometh/Comp_Report.html;
-            ln -s ${params.results_dir}/pycometh/Comp_Report.html ./Comp_Report.html;
+            touch ${params.results_dir}/pycometh/pycoMeth_summary_report.html;
+            ln -s ${params.results_dir}/pycometh/pycoMeth_summary_report.html ./pycoMeth_summary_report.html;
         fi
 
     """
