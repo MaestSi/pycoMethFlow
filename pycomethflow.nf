@@ -164,7 +164,7 @@ process pycomethIntervalAggregate {
             pycoMeth Interval_Aggregate -i ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv -f ${params.reference} -a ${params.results_dir}/${sample}/pycometh/CGI_Aggregate.bed  -b ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed  -t ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv -n ${params.Interval_Aggregate_n}  -m ${params.Interval_Aggregate_m} -s ${sample} -l ${params.Interval_Aggregate_l} 
         fi
         
-    if [[ ! -f "${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv" ]]; then touch "${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv"; fi
+        if [[ ! -f "${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv" ]]; then touch "${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv"; fi
     
         ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed ./Interval_Aggregate.bed;
         ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv ./Interval_Aggregate.tsv;
@@ -193,12 +193,12 @@ process pycomethMethComp {
         echo ${sample}
         samples_list=\$(echo "${sample}" | sed \'s/\\[//\' | sed \'s/\\]//\' | sed \'s/,//g\')
         
-    pycoMeth Meth_Comp -i Interval_Aggregate.tsv* -s \$samples_list -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp_Interval.bed -t ${params.results_dir}/pycometh/Meth_Comp_Interval.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
-    pycoMeth Meth_Comp -i CpG_Aggregate.tsv* -s \$samples_list -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp_CpG.bed -t ${params.results_dir}/pycometh/Meth_Comp_CpG.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
+        pycoMeth Meth_Comp -i Interval_Aggregate.tsv* -s \$samples_list -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp_Interval.bed -t ${params.results_dir}/pycometh/Meth_Comp_Interval.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
+        pycoMeth Meth_Comp -i CpG_Aggregate.tsv* -s \$samples_list -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp_CpG.bed -t ${params.results_dir}/pycometh/Meth_Comp_CpG.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
     
-    if [[ ! -f "${params.results_dir}/pycometh/Meth_Comp_Interval.tsv" ]]; then touch "${params.results_dir}/pycometh/Meth_Comp_Interval.tsv"; fi
+        if [[ ! -f "${params.results_dir}/pycometh/Meth_Comp_Interval.tsv" ]]; then touch "${params.results_dir}/pycometh/Meth_Comp_Interval.tsv"; fi
         
-    ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.bed ./Meth_Comp_Interval.bed
+        ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.bed ./Meth_Comp_Interval.bed
         ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.tsv ./Meth_Comp_Interval.tsv
         ln -s ${params.results_dir}/pycometh/Meth_Comp_CpG.bed ./Meth_Comp_CpG.bed
         ln -s ${params.results_dir}/pycometh/Meth_Comp_CpG.tsv ./Meth_Comp_CpG.tsv
