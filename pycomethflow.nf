@@ -139,8 +139,8 @@ process pycomethCpGAggregate {
     """
     else
     """
-        ln -s ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.bed ./CpG_Aggregate.bed*
-        ln -s ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv ./CpG_Aggregate.tsv*
+        ln -s ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.bed ./CpG_Aggregate.bed
+        ln -s ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv ./CpG_Aggregate.tsv
   
     """
 }
