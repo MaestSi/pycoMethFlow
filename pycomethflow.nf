@@ -122,6 +122,7 @@ process pycomethCpGAggregate {
 
     output:
     tuple val(sample), file ('CpG_Aggregate.bed') into pycomethCpGAggregate_pycomethIntervalAggregate
+    file('CpG_Aggregate.tsv') into pycomethCpGAggregate_pycomethMethComp
 
     script:
     if(params.pycomethCpGAggregate)
@@ -175,36 +176,40 @@ process pycomethIntervalAggregate {
     """
 }
 
-
 process pycomethMethComp {
     input:
     file('Interval_Aggregate.tsv*') from pycomethIntervalAggregate_pycomethMethComp.collect()
+    file('CpG_Aggregate.tsv') from pycomethCpGAggregate_pycomethMethComp.collect()
 
     output:
-    file ('Meth_Comp.tsv') into pycomethMethComp_pycomethCompReport
+    file ('Meth_Comp_Interval.tsv') into pycomethMethComp_pycomethCompReport
 
     script:
     if(params.pycomethMethComp)
     """
         mkdir -p ${params.results_dir}/pycometh/
         
-	pycoMeth Meth_Comp -i Interval_Aggregate.tsv* -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp.bed -t ${params.results_dir}/pycometh/Meth_Comp.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
+	pycoMeth Meth_Comp -i Interval_Aggregate.tsv* -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp_Interval.bed -t ${params.results_dir}/pycometh/Meth_Comp_Interval.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
+	pycoMeth Meth_Comp -i CpG_Aggregate.tsv* -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp_CpG.bed -t ${params.results_dir}/pycometh/Meth_Comp_CpG.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
+	
+	if [[ ! -f "${params.results_dir}/pycometh/Meth_Comp_Interval.tsv" ]]; then touch "${params.results_dir}/pycometh/Meth_Comp_Interval.tsv"; fi
         
-	if [[ ! -f "${params.results_dir}/pycometh/Meth_Comp.tsv" ]]; then touch "${params.results_dir}/pycometh/Meth_Comp.tsv"; fi
-        
-	ln -s ${params.results_dir}/pycometh/Meth_Comp.bed ./Meth_Comp.bed
-        ln -s ${params.results_dir}/pycometh/Meth_Comp.tsv ./Meth_Comp.tsv
+	ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.bed ./Meth_Comp_Interval.bed
+        ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.tsv ./Meth_Comp_Interval.tsv
+        ln -s ${params.results_dir}/pycometh/Meth_Comp_CpG.bed ./Meth_Comp_CpG.bed
+        ln -s ${params.results_dir}/pycometh/Meth_Comp_CpG.tsv ./Meth_Comp_CpG.tsv
     """
     else
     """
-       ln -s ${params.results_dir}/pycometh/Meth_Comp.bed ./Meth_Comp.bed
-       ln -s ${params.results_dir}/pycometh/Meth_Comp.tsv ./Meth_Comp.tsv
-
+       ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.bed ./Meth_Comp_Interval.bed
+       ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.tsv ./Meth_Comp_Interval.tsv
+       ln -s ${params.results_dir}/pycometh/Meth_Comp_CpG.bed ./Meth_Comp_CpG.bed
+       ln -s ${params.results_dir}/pycometh/Meth_Comp_CpG.tsv ./Meth_Comp_CpG.tsv
     """
 }
 process pycomethCompReport {
     input:
-    file ('Meth_Comp.tsv') from pycomethMethComp_pycomethCompReport
+    file ('Meth_Comp_Interval.tsv') from pycomethMethComp_pycomethCompReport
 
     output:
 
@@ -213,7 +218,7 @@ process pycomethCompReport {
     """
         mkdir -p ${params.results_dir}/pycometh/
         
-        pycoMeth Comp_Report -i 'Meth_Comp.tsv' -g ${params.gtf} -f ${params.reference} -o ${params.results_dir}/pycometh -n ${params.Comp_Report_n} -d ${params.Comp_Report_d} --pvalue_threshold ${params.Comp_Report_pvalue_threshold} --min_diff_llr ${params.Comp_Report_min_diff_llr} --n_len_bin ${params.Comp_Report_n_len_bin} ${params.Comp_Report_export_static_plots} ${params.Comp_Report_report_non_significant};
+        pycoMeth Comp_Report -i 'Meth_Comp_Interval.tsv' -g ${params.gtf} -f ${params.reference} -o ${params.results_dir}/pycometh -n ${params.Comp_Report_n} -d ${params.Comp_Report_d} --pvalue_threshold ${params.Comp_Report_pvalue_threshold} --min_diff_llr ${params.Comp_Report_min_diff_llr} --n_len_bin ${params.Comp_Report_n_len_bin} ${params.Comp_Report_export_static_plots} ${params.Comp_Report_report_non_significant};
         ln -s ${params.results_dir}/pycometh/pycoMeth_summary_report.html ./pycoMeth_summary_report.html;
     """
     else
