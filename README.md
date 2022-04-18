@@ -25,7 +25,7 @@ nextflow -c pycomethflow.conf run pycomethflow.nf \
 --samples = "samples.txt" \
 --results_dir = "results_dir" \
 --reference = "file.fasta" \
---gtf = "file.gff" \
+--gff = "file.gff" \
 -profile docker
 
     Mandatory argument:
@@ -34,7 +34,7 @@ nextflow -c pycomethflow.conf run pycomethflow.nf \
       --samples                     Path to tab separated sample sheet containing sample_name /path/to/file.fastq /path/to/fast5_dir /path/to/sequencing_summary.txt
       --results_dir                 Directory where results are stored
       --reference                   Reference file in fasta format
-      --gtf                         Annotation file in gtf format
+      --gff                         Annotation file in gff3 format
 ```
 
 ## Citation
