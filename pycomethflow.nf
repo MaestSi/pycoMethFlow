@@ -11,7 +11,7 @@
 def helpMessage() {
         log.info"""
     Usage:
-    nextflow -c pycomethflow.conf run pycomethflow.nf --samples = "samples.txt" --results_dir = "results_dir" --reference = "file.fasta" --gtf = "file.gff" 
+    nextflow -c pycomethflow.conf run pycomethflow.nf --samples = "samples.txt" --results_dir = "results_dir" --reference = "file.fasta" --gff = "file.gff" 
 -profile docker
     Mandatory argument:
     -profile                        Configuration profile to use. Available: docker, singularity
@@ -19,7 +19,7 @@ def helpMessage() {
       --samples                     Path to tab separated sample sheet containing sample_name /path/to/file.fastq /path/to/fast5_dir /path/to/sequencing_summary.txt
       --results_dir                 Directory where results are stored
       --reference                   Reference file in fasta format
-      --gtf                         Annotation file in gtf format
+      --gff                         Annotation file in gff3 format
     """.stripIndent()
 }
 
@@ -223,7 +223,7 @@ process pycomethCompReport {
     """
         mkdir -p ${params.results_dir}/pycometh/
         
-        pycoMeth Comp_Report -i 'Meth_Comp_Interval.tsv' -g ${params.gtf} -f ${params.reference} -o ${params.results_dir}/pycometh -n ${params.Comp_Report_n} -d ${params.Comp_Report_d} --pvalue_threshold ${params.Comp_Report_pvalue_threshold} --min_diff_llr ${params.Comp_Report_min_diff_llr} --n_len_bin ${params.Comp_Report_n_len_bin} ${params.Comp_Report_export_static_plots} ${params.Comp_Report_report_non_significant};
+        pycoMeth Comp_Report -i 'Meth_Comp_Interval.tsv' -g ${params.gff} -f ${params.reference} -o ${params.results_dir}/pycometh -n ${params.Comp_Report_n} -d ${params.Comp_Report_d} --pvalue_threshold ${params.Comp_Report_pvalue_threshold} --min_diff_llr ${params.Comp_Report_min_diff_llr} --n_len_bin ${params.Comp_Report_n_len_bin} ${params.Comp_Report_export_static_plots} ${params.Comp_Report_report_non_significant};
         ln -s ${params.results_dir}/pycometh/pycoMeth_summary_report.html ./pycoMeth_summary_report.html;
     """
     else
