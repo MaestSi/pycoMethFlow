@@ -1,5 +1,5 @@
 # pycoMethFlow
-**pycoMethFlow** is a [Nextflow](https://www.nextflow.io) pipeline for running [minimap2](https://github.com/lh3/minimap2) + [nanopolish](https://github.com/jts/nanopolish) call-methylation + [pycoMeth](https://github.com/snajder-r/pycoMeth) on multiple samples and across multiple infrastructure in a streamlined, portable and reproducible manner.
+**pycoMethFlow** is a [Nextflow](https://www.nextflow.io) pipeline for running [minimap2](https://github.com/lh3/minimap2) + [nanopolish](https://github.com/jts/nanopolish) call-methylation + [pycoMeth](https://github.com/snajder-r/pycoMeth) on multiple samples and across multiple infrastructures in a streamlined, portable and reproducible manner.
 
 ## Getting started
 
