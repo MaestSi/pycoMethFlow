@@ -11,7 +11,7 @@
 def helpMessage() {
         log.info"""
     Usage:
-    nextflow -c pycomethflow.conf run pycomethflow.nf --samples = "samples.txt" --results_dir = "results_dir" --reference = "file.fasta" --gff = "file.gff" 
+    nextflow -c pycomethflow.conf run pycomethflow.nf --samples = "samples.txt" --results_dir = "results_dir" --reference = "file.fasta" --gtf = "file.gff" 
 -profile docker
     Mandatory argument:
     -profile                        Configuration profile to use. Available: docker, singularity
@@ -19,7 +19,7 @@ def helpMessage() {
       --samples                     Path to tab separated sample sheet containing sample_name /path/to/file.fastq /path/to/fast5_dir /path/to/sequencing_summary.txt
       --results_dir                 Directory where results are stored
       --reference                   Reference file in fasta format
-      --gff                         Annotation file in gff3 format
+      --gtf                         Annotation file in gtf format
     """.stripIndent()
 }
 
@@ -36,6 +36,28 @@ Channel
     .map{ row-> tuple(row.sample, file(row.fastq)) }
     .set{samples_alignment}
 
+// Indexing
+process indexing {
+    input:
+
+    output:
+       file('chr_names.txt') into indexing_chrNames
+    script:
+    if (params.indexing)
+    """
+        mkdir -p ${params.results_dir}/pycometh/
+        if [[ ! -f "${params.reference}.fai" ]]; then samtools faidx ${params.reference}; fi
+        
+        cat ${params.reference}.fai | cut -f1 > chr_names.txt
+
+    """
+    else
+    """
+        mkdir -p ${params.results_dir}/pycometh/
+        cat ${params.reference}.fai | cut -f1 > chr_names.txt
+    """
+}
+
 // Alignment
 process alignment {
     input:
@@ -46,10 +68,10 @@ process alignment {
 
     script:
     if(params.alignment)
-    """
+    """ 
        	mkdir -p ${params.results_dir}/${sample}/alignment/
         
-	minimap2 -ax map-ont -t ${task.cpus} ${params.reference} ${fastq} | samtools view -hSb | samtools sort -@ ${task.cpus} -o ${params.results_dir}/${sample}/alignment/minimap.bam
+	    minimap2 -ax map-ont -t ${task.cpus} ${params.reference} ${fastq} | samtools view -hSb | samtools sort -@ ${task.cpus} -o ${params.results_dir}/${sample}/alignment/minimap.bam
         samtools index -@ ${task.cpus} ${params.results_dir}/${sample}/alignment/minimap.bam
            
         ln -s ${params.results_dir}/${sample}/alignment/minimap.bam ./minimap.bam
@@ -68,162 +90,150 @@ process nanopolish {
     val(sample) from alignment_nanopolish
 
     output:
-	tuple val(sample), file('nanopolish_cpg_methylation.tsv') into nanopolish_pycomethCpGAggregate
+	val(sample) into nanopolish_pycomethMethSeg
 
     script:
     if(params.nanopolish)
     """
        	mkdir -p ${params.results_dir}/${sample}/nanopolish/
         
-	fastq=\$(grep \"^\"${sample}\"\t\" ${params.samples} | cut -f2)
+	    fastq=\$(grep \"^\"${sample}\"\t\" ${params.samples} | cut -f2)
         fast5=\$(grep \"^\"${sample}\"\t\" ${params.samples} | cut -f3)
         sequencing_summary=\$(grep \"^\"${sample}\"\t\" ${params.samples} | cut -f4)
         
-	nanopolish index -d \${fast5} \${fastq} -s \${sequencing_summary}
+	    nanopolish index -d \${fast5} \${fastq} -s \${sequencing_summary}
         nanopolish call-methylation --reads \${fastq} --bam ${params.results_dir}/${sample}/alignment/minimap.bam --genome ${params.reference} --methylation cpg --threads ${task.cpus} > ${params.results_dir}/${sample}/nanopolish/nanopolish_cpg_methylation.tsv
 
-        ln -s ${params.results_dir}/${sample}/nanopolish/nanopolish_cpg_methylation.tsv ./nanopolish_cpg_methylation.tsv
+        meth5 create_m5 --input_paths ${params.results_dir}/${sample}/nanopolish/nanopolish_cpg_methylation.tsv --output_file ${params.results_dir}/${sample}/nanopolish/nanopolish_cpg_methylation.m5
+
+        ln -s ${params.results_dir}/${sample}/nanopolish/nanopolish_cpg_methylation.m5 ./nanopolish_cpg_methylation.m5
     """
     else
     """
-        ln -s ${params.results_dir}/${sample}/nanopolish/nanopolish_cpg_methylation.tsv ./nanopolish_cpg_methylation.tsv
+        ln -s ${params.results_dir}/${sample}/nanopolish/nanopolish_cpg_methylation.m5 ./nanopolish_cpg_methylation.m5
+
     """
 }
 
-// pycoMeth CGI Finder
-process pycomethCGIFinder {
+indexing_chrNames
+        .splitCsv()
+        .set{chrNames_pycomethMethSeg}
+
+// pycoMeth Meth_Seg
+process pycomethMethSeg {
     input:
+    val(chr) from chrNames_pycomethMethSeg
+    val(sample) from nanopolish_pycomethMethSeg.collect()
 
     output:
-    file('CGI_Finder.bed') into pycomethCGIFinder_pycomethIntervalAggregate
+    val(sample) into pycomethMethSeg_pycomethMethComp
 
     script:
-    if(params.pycomethCGIFinder)
+    if(params.pycomethMethSeg)
     """
-       	mkdir -p ${params.results_dir}/pycometh/
+        mkdir -p ${params.results_dir}/pycometh/;
+        chr_val=\$(echo "${chr}" | sed \'s/\\[//\' | sed \'s/\\]//\')
+        samples_list=\$(echo "${sample}" | sed \'s/\\[//\' | sed \'s/\\]//\' | sed \'s/,/\\n/g\')
+
+        m5=""
+        for s in \$samples_list; do
+            m5_curr=\$(find ${params.results_dir}/\$s/nanopolish | grep \"\\.m5\$\");
+            m5=\$m5\" \"\$m5_curr;
+        done
         
-	pycoMeth CGI_Finder -f ${params.reference} -b ${params.results_dir}/pycometh/CGI_Finder.bed -t ${params.results_dir}/pycometh/CGI_Finder.tsv -m ${params.CGI_Finder_m} -w ${params.CGI_Finder_w} -c ${params.CGI_Finder_c} -r ${params.CGI_Finder_r}
-
-        if [[ ! -f "${params.results_dir}/pycometh/CGI_Finder.bed" ]]; then touch "${params.results_dir}/pycometh/CGI_Finder.bed"; fi
-	
-        ln -s ${params.results_dir}/pycometh/CGI_Finder.bed ./CGI_Finder.bed
-        ln -s ${params.results_dir}/pycometh/CGI_Finder.tsv ./CGI_Finder.tsv
+        chr_flag=1
+        for file in \$(find ${params.results_dir}/*/nanopolish/ | grep nanopolish_cpg_methylation.tsv); do
+            if ! grep -q \$chr_val \$file ; then chr_flag=""; fi
+        done
         
-    """
-    else
-    """
-        touch ./CGI_Finder.bed ./CGI_Finder.tsv
-      
-    """
-}
-process pycomethCpGAggregate {
-    input:
-    tuple val(sample), file('nanopolish_cpg_methylation') from nanopolish_pycomethCpGAggregate
-
-    output:
-    tuple val(sample), file ('CpG_Aggregate.bed') into pycomethCpGAggregate_pycomethIntervalAggregate
-    file('CpG_Aggregate.tsv') into pycomethCpGAggregate_pycomethMethComp
-
-    script:
-    if(params.pycomethCpGAggregate)
-    """
-        mkdir -p ${params.results_dir}/${sample}/pycometh/
-
-        pycoMeth CpG_Aggregate -i 'nanopolish_cpg_methylation' -f ${params.reference} -b ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.bed -t ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv -s ${sample} -d ${params.CpG_Aggregate_d} -l ${params.CpG_Aggregate_l}
-        
-	if [[ ! -f "${params.results_dir}/${sample}/pycometh/CpG_Aggregate.bed" ]]; then touch "${params.results_dir}/${sample}/pycometh/CpG_Aggregate.bed"; fi
-	
-        ln -s ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.bed ./CpG_Aggregate.bed
-        ln -s ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv ./CpG_Aggregate.tsv
-        
-    """
-    else
-    """
-        ln -s ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.bed ./CpG_Aggregate.bed
-        ln -s ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv ./CpG_Aggregate.tsv
-  
-    """
-}
-
-process pycomethIntervalAggregate {
-    input:
-    file('CGI_Finder.bed') from pycomethCGIFinder_pycomethIntervalAggregate
-    tuple val(sample), file ('CpG_Aggregate.bed') from pycomethCpGAggregate_pycomethIntervalAggregate
-
-    output:
-    file('Interval_Aggregate.tsv') into pycomethIntervalAggregate_pycomethMethComp
-    val(sample) into pycomethIntervalAggregate2_pycomethMethComp
-
-    script:
-    if(params.pycomethIntervalAggregate)
-    """
-        mkdir -p ${params.results_dir}/${sample}/pycometh/;
-        if [[ ${params.pycomethCGIFinder} ]]; then
-            pycoMeth Interval_Aggregate -i ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv -f ${params.reference} -b ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed  -t ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv -n ${params.Interval_Aggregate_n} -m ${params.Interval_Aggregate_m} -s ${sample} -l ${params.Interval_Aggregate_l};
-        else
-            pycoMeth Interval_Aggregate -i ${params.results_dir}/${sample}/pycometh/CpG_Aggregate.tsv -f ${params.reference} -a ${params.results_dir}/${sample}/pycometh/CGI_Aggregate.bed  -b ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed  -t ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv -n ${params.Interval_Aggregate_n}  -m ${params.Interval_Aggregate_m} -s ${sample} -l ${params.Interval_Aggregate_l} 
+        if [ ! -z "\$chr_flag" ]; then
+            pycoMeth Meth_Seg -i \$m5 -c \$chr_val -b ${params.results_dir}/pycometh/Meth_Seg_\$chr_val  -t ${params.results_dir}/pycometh/Meth_Seg_\$chr_val.tsv -p ${task.cpus} --reader_workers ${task.cpus} -m ${params.Meth_Seg_m} -w ${params.Meth_Seg_w} ${params.Meth_Seg_print_diff_met};
         fi
-        
-        if [[ ! -f "${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv" ]]; then touch "${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv"; fi
-    
-        ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed ./Interval_Aggregate.bed;
-        ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv ./Interval_Aggregate.tsv;
-   
+       
     """
     else
     """
-        ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.bed ./Interval_Aggregate.bed
-        ln -s ${params.results_dir}/${sample}/pycometh/Interval_Aggregate.tsv ./Interval_Aggregate.tsv
+        mkdir -p ${params.results_dir}/pycometh/
+        
+        pycoMeth CGI_Finder -f ${params.reference} -b ${params.results_dir}/pycometh/CGI_Finder.bed -t ${params.results_dir}/pycometh/CGI_Finder.tsv -m ${params.CGI_Finder_m} -w ${params.CGI_Finder_w} -c ${params.CGI_Finder_c} -r ${params.CGI_Finder_r}
+
+        ln -s ${params.results_dir}/pycometh/CGI_Finder.tsv ./CGI_Finder.tsv
+        ln -s ${params.results_dir}/pycometh/CGI_Finder.bed ./CGI_Finder.bed
+
     """
 }                                     
 
 process pycomethMethComp {
     input:
-    file('Interval_Aggregate.tsv*') from pycomethIntervalAggregate_pycomethMethComp.collect()
-    val(sample) from pycomethIntervalAggregate2_pycomethMethComp.collect()
-    file('CpG_Aggregate.tsv') from pycomethCpGAggregate_pycomethMethComp.collect()
+    val(sample) from pycomethMethSeg_pycomethMethComp.collect()
 
     output:
-    file ('Meth_Comp_Interval.tsv') into pycomethMethComp_pycomethCompReport
+    file ('Meth_Comp.tsv') into pycomethMethComp_pycomethCompReport
+    val(sample) into pycomethMethComp_pycomethCompReport2
 
     script:
     if(params.pycomethMethComp)
     """
         mkdir -p ${params.results_dir}/pycometh/
-        echo ${sample}
-        samples_list=\$(echo "${sample}" | sed \'s/\\[//\' | sed \'s/\\]//\' | sed \'s/,//g\')
+
+        if [[ ${params.pycomethMethSeg} ]]; then
+            cat ${params.results_dir}/pycometh/Meth_Seg_*.bedGraph >> ${params.results_dir}/pycometh/Meth_Seg.bedGraph
+            cat ${params.results_dir}/pycometh/Meth_Seg_*.tsv >> ${params.results_dir}/pycometh/Meth_Seg.tsv
+            ln -s ${params.results_dir}/pycometh/Meth_Seg.bed ./Meth_Seg.bedGraph;
+            ln -s ${params.results_dir}/pycometh/Meth_Seg.tsv ./Meth_Seg.tsv;
+            #for s in \$samples_list; do
+            #    cat ${params.results_dir}/\$s/pycometh/Meth_Seg_.*.bedGraph >> ${params.results_dir}/\$s/pycometh/Meth_Seg.bedGraph
+            #    cat ${params.results_dir}/\$s/pycometh/Meth_Seg_.*.tsv >> ${params.results_dir}/\$s/pycometh/Meth_Seg.tsv
+            #done
+            #ln -s ${params.results_dir}/\$s/pycometh/Meth_Seg.bed ./Meth_Seg.bedGraph;
+            #ln -s ${params.results_dir}/\$s/pycometh/Meth_Seg.tsv ./Meth_Seg.tsv;
+        else 
+            ln -s ${params.results_dir}/pycometh/CGI_Finder.tsv ./CGI_Finder.tsv
+            ln -s ${params.results_dir}/pycometh/CGI_Finder.bed ./CGI_Finder.bed
+        fi
+
+        samples_list=\$(echo "${sample}" | sed \'s/\\[//\' | sed \'s/\\]//\' | sed \'s/,/\\n/g\')
+        m5=""
+        for s in \$samples_list; do
+            m5_curr=\$(find ${params.results_dir}/\$s/nanopolish | grep \"\\.m5\$\");
+            m5=\$m5\" \"\$m5_curr;
+        done
         
-        pycoMeth Meth_Comp -i Interval_Aggregate.tsv* -s \$samples_list -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp_Interval.bed -t ${params.results_dir}/pycometh/Meth_Comp_Interval.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
-        pycoMeth Meth_Comp -i CpG_Aggregate.tsv* -s \$samples_list -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp_CpG.bed -t ${params.results_dir}/pycometh/Meth_Comp_CpG.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
-    
-        if [[ ! -f "${params.results_dir}/pycometh/Meth_Comp_Interval.tsv" ]]; then touch "${params.results_dir}/pycometh/Meth_Comp_Interval.tsv"; fi
+        if [[ ${params.pycomethMethSeg} ]]; then
+            pycoMeth Meth_Comp -i \$m5 -a ${params.results_dir}/pycometh/Meth_Seg.bedGraph -s \$samples_list -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp.bed -t ${params.results_dir}/pycometh/Meth_Comp.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
+        else
+            pycoMeth Meth_Comp -i \$m5 -a {params.results_dir}/pycometh/CGI_Aggregate.bed -s \$samples_list -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp.bed -t ${params.results_dir}/pycometh/Meth_Comp.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
+        fi
         
-        ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.bed ./Meth_Comp_Interval.bed
-        ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.tsv ./Meth_Comp_Interval.tsv
-        ln -s ${params.results_dir}/pycometh/Meth_Comp_CpG.bed ./Meth_Comp_CpG.bed
-        ln -s ${params.results_dir}/pycometh/Meth_Comp_CpG.tsv ./Meth_Comp_CpG.tsv
+        ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.bed ./Meth_Comp.bed
+        ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.tsv ./Meth_Comp.tsv
     """
     else
     """
-       ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.bed ./Meth_Comp_Interval.bed
-       ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.tsv ./Meth_Comp_Interval.tsv
-       ln -s ${params.results_dir}/pycometh/Meth_Comp_CpG.bed ./Meth_Comp_CpG.bed
-       ln -s ${params.results_dir}/pycometh/Meth_Comp_CpG.tsv ./Meth_Comp_CpG.tsv
+       ln -s ${params.results_dir}/pycometh/Meth_Comp_CpG.bed ./Meth_Comp.bed
+       ln -s ${params.results_dir}/pycometh/Meth_Comp_CpG.tsv ./Meth_Comp.tsv
     """
 }
 
 process pycomethCompReport {
     input:
-    file ('Meth_Comp_Interval.tsv') from pycomethMethComp_pycomethCompReport
-
+    file ('Meth_Comp.tsv') from pycomethMethComp_pycomethCompReport
+    val(sample) from pycomethMethComp_pycomethCompReport2.collect()
+    
     output:
 
     script:
     if(params.pycomethCompReport)
     """
         mkdir -p ${params.results_dir}/pycometh/
-        
-        pycoMeth Comp_Report -i 'Meth_Comp_Interval.tsv' -g ${params.gff} -f ${params.reference} -o ${params.results_dir}/pycometh -n ${params.Comp_Report_n} -d ${params.Comp_Report_d} --pvalue_threshold ${params.Comp_Report_pvalue_threshold} --min_diff_llr ${params.Comp_Report_min_diff_llr} --n_len_bin ${params.Comp_Report_n_len_bin} ${params.Comp_Report_export_static_plots} ${params.Comp_Report_report_non_significant};
+        samples_list=\$(echo "${sample}" | sed \'s/\\[//\' | sed \'s/\\]//\' | sed \'s/,//g\')
+        m5=""
+        for s in $samples_list; do
+            m5_curr=\$(find ${params.results_dir}/${sample}/nanopolish | grep \"\\.m5\$\");
+            m5=\$m5\" \"\$m5_curr;
+        done
+
+        pycoMeth Comp_Report -i \$m5 -c 'Meth_Comp.tsv' -g ${params.gtf} -f ${params.reference} -o ${params.results_dir}/pycometh -n ${params.Comp_Report_n} -d ${params.Comp_Report_d} --pvalue_threshold ${params.Comp_Report_pvalue_threshold} --min_diff_llr ${params.Comp_Report_min_diff_llr} --n_len_bin ${params.Comp_Report_n_len_bin} ${params.Comp_Report_export_static_plots} ${params.Comp_Report_report_non_significant};
         ln -s ${params.results_dir}/pycometh/pycoMeth_summary_report.html ./pycoMeth_summary_report.html;
     """
     else
