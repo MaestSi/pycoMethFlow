@@ -11,7 +11,7 @@
 def helpMessage() {
         log.info"""
     Usage:
-    nextflow -c pycomethflow.conf run pycomethflow.nf --samples = "samples.txt" --results_dir = "results_dir" --reference = "file.fasta" --gtf = "file.gff" 
+    nextflow -c pycomethflow.conf run pycomethflow.nf --samples = "samples.txt" --results_dir = "results_dir" --reference = "file.fasta" --gff = "file.gff" 
 -profile docker
     Mandatory argument:
     -profile                        Configuration profile to use. Available: docker, singularity
@@ -19,7 +19,7 @@ def helpMessage() {
       --samples                     Path to tab separated sample sheet containing sample_name /path/to/file.fastq /path/to/fast5_dir /path/to/sequencing_summary.txt
       --results_dir                 Directory where results are stored
       --reference                   Reference file in fasta format
-      --gtf                         Annotation file in gtf format
+      --gff                         Annotation file in gff format
     """.stripIndent()
 }
 
@@ -179,13 +179,13 @@ process pycomethMethComp {
         if [[ ${params.pycomethMethSeg} ]]; then
             cat ${params.results_dir}/pycometh/Meth_Seg_*.bedGraph >> ${params.results_dir}/pycometh/Meth_Seg.bedGraph
             cat ${params.results_dir}/pycometh/Meth_Seg_*.tsv >> ${params.results_dir}/pycometh/Meth_Seg.tsv
-            ln -s ${params.results_dir}/pycometh/Meth_Seg.bed ./Meth_Seg.bedGraph;
+            ln -s ${params.results_dir}/pycometh/Meth_Seg.bedGraph ./Meth_Seg.bedGraph;
             ln -s ${params.results_dir}/pycometh/Meth_Seg.tsv ./Meth_Seg.tsv;
             #for s in \$samples_list; do
             #    cat ${params.results_dir}/\$s/pycometh/Meth_Seg_.*.bedGraph >> ${params.results_dir}/\$s/pycometh/Meth_Seg.bedGraph
             #    cat ${params.results_dir}/\$s/pycometh/Meth_Seg_.*.tsv >> ${params.results_dir}/\$s/pycometh/Meth_Seg.tsv
             #done
-            #ln -s ${params.results_dir}/\$s/pycometh/Meth_Seg.bed ./Meth_Seg.bedGraph;
+            #ln -s ${params.results_dir}/\$s/pycometh/Meth_Seg.bedGraph ./Meth_Seg.bedGraph;
             #ln -s ${params.results_dir}/\$s/pycometh/Meth_Seg.tsv ./Meth_Seg.tsv;
         else 
             ln -s ${params.results_dir}/pycometh/CGI_Finder.tsv ./CGI_Finder.tsv
@@ -205,13 +205,13 @@ process pycomethMethComp {
             pycoMeth Meth_Comp -i \$m5 -a {params.results_dir}/pycometh/CGI_Aggregate.bed -s \$samples_list -f ${params.reference} -b ${params.results_dir}/pycometh/Meth_Comp.bed -t ${params.results_dir}/pycometh/Meth_Comp.tsv -m ${params.Meth_Comp_m} -l ${params.Meth_Comp_l} --pvalue_adj_method ${params.Meth_Comp_pvalue_adj_method} --pvalue_threshold ${params.Meth_Comp_pvalue_threshold} ${params.Meth_Comp_only_tested_sites}
         fi
         
-        ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.bed ./Meth_Comp.bed
-        ln -s ${params.results_dir}/pycometh/Meth_Comp_Interval.tsv ./Meth_Comp.tsv
+        ln -s ${params.results_dir}/pycometh/Meth_Comp.bed ./Meth_Comp.bed
+        ln -s ${params.results_dir}/pycometh/Meth_Comp.tsv ./Meth_Comp.tsv
     """
     else
     """
-       ln -s ${params.results_dir}/pycometh/Meth_Comp_CpG.bed ./Meth_Comp.bed
-       ln -s ${params.results_dir}/pycometh/Meth_Comp_CpG.tsv ./Meth_Comp.tsv
+       ln -s ${params.results_dir}/pycometh/Meth_Comp.bed ./Meth_Comp.bed
+       ln -s ${params.results_dir}/pycometh/Meth_Comp.tsv ./Meth_Comp.tsv
     """
 }
 
@@ -228,12 +228,12 @@ process pycomethCompReport {
         mkdir -p ${params.results_dir}/pycometh/
         samples_list=\$(echo "${sample}" | sed \'s/\\[//\' | sed \'s/\\]//\' | sed \'s/,//g\')
         m5=""
-        for s in $samples_list; do
-            m5_curr=\$(find ${params.results_dir}/${sample}/nanopolish | grep \"\\.m5\$\");
+        for s in \$samples_list; do
+            m5_curr=\$(find ${params.results_dir}/\$s/nanopolish | grep \"\\.m5\$\");
             m5=\$m5\" \"\$m5_curr;
         done
 
-        pycoMeth Comp_Report -i \$m5 -c 'Meth_Comp.tsv' -g ${params.gtf} -f ${params.reference} -o ${params.results_dir}/pycometh -n ${params.Comp_Report_n} -d ${params.Comp_Report_d} --pvalue_threshold ${params.Comp_Report_pvalue_threshold} --min_diff_llr ${params.Comp_Report_min_diff_llr} --n_len_bin ${params.Comp_Report_n_len_bin} ${params.Comp_Report_export_static_plots} ${params.Comp_Report_report_non_significant};
+        pycoMeth Comp_Report -i \$m5 -c 'Meth_Comp.tsv' -g ${params.gff} -f ${params.reference} -o ${params.results_dir}/pycometh -n ${params.Comp_Report_n} -d ${params.Comp_Report_d} --pvalue_threshold ${params.Comp_Report_pvalue_threshold} --min_diff_llr ${params.Comp_Report_min_diff_llr} --n_len_bin ${params.Comp_Report_n_len_bin} ${params.Comp_Report_export_static_plots} ${params.Comp_Report_report_non_significant};
         ln -s ${params.results_dir}/pycometh/pycoMeth_summary_report.html ./pycoMeth_summary_report.html;
     """
     else
